@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Retrieval</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Image Search</h1>
+    
+    <!-- PCA Toggle -->
+    <label for="use_pca">Use PCA-Reduced Embeddings (k=50, 10000 images):</label>
+    <input type="checkbox" id="use_pca" name="use_pca">
+
+    <hr>
+
+    <!-- Text Query Form -->
+    <form id="textQueryForm">
+        <label for="query_text">Enter Text Query:</label>
+        <input type="text" id="query_text" name="query_text" required>
+        <button type="submit">Search</button>
+    </form>
+
+    <hr>
+
+    <!-- Image Query Form -->
+    <form id="imageQueryForm" enctype="multipart/form-data">
+        <label for="query_image">Upload Image Query:</label>
+        <input type="file" id="query_image" name="query_image" accept="image/*" required>
+        <button type="submit">Search</button>
+    </form>
+
+    <hr>
+
+    <!-- Combined Image and Text Query Form -->
+    <form id="combinedQueryForm" enctype="multipart/form-data">
+        <label for="query_image">Upload Image Query:</label>
+        <input type="file" id="query_image" name="query_image" accept="image/*" required>
+
+        <label for="query_text">Enter Text Query:</label>
+        <input type="text" id="query_text" name="query_text" required>
+
+        <label for="weight">Weight (between 0 and 1):</label>
+        <input type="number" id="weight" name="weight" min="0" max="1" step="0.01" value="0.5" required>
+
+        <button type="submit">Search</button>
+    </form>
+
+    <hr>
+
+    <!-- Results Display -->
+    <h2>Top 5 Most Similar Images</h2>
+    <ul id="results"></ul>
+
+    <script>
+        // Get the PCA toggle state
+        function getPCAToggle() {
+            return $('#use_pca').is(':checked');
+        }
+
+        // Handle Text Query Submission
+        $('#textQueryForm').on('submit', function(e) {
+            e.preventDefault();
+
+            var queryText = $('#query_text').val();
+            var usePCA = getPCAToggle();
+
+            $.ajax({
+                url: '/search_text',
+                type: 'POST',
+                data: { query_text: queryText, use_pca: usePCA },
+                success: function(data) {
+                    displayResults(data);
+                },
+                error: function(err) {
+                    alert('Error: ' + err);
+                }
+            });
+        });
+
+        // Handle Image Query Submission
+        $('#imageQueryForm').on('submit', function(e) {
+            e.preventDefault();
+
+            var formData = new FormData(this);
+            var usePCA = getPCAToggle();
+            formData.append('use_pca', usePCA);
+
+            $.ajax({
+                url: '/search_image',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    displayResults(data);
+                },
+                error: function(err) {
+                    alert('Error: ' + err);
+                }
+            });
+        });
+
+        // Handle Combined Query Submission
+        $('#combinedQueryForm').on('submit', function(e) {
+            e.preventDefault();
+
+            var formData = new FormData(this);
+            var usePCA = getPCAToggle();
+            formData.append('use_pca', usePCA);
+
+            $.ajax({
+                url: '/search_combined',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    displayResults(data);
+                },
+                error: function(err) {
+                    alert('Error: ' + err);
+                }
+            });
+        });
+
+        // Function to Display Results
+        function displayResults(data) {
+            $('#results').empty();  // Clear previous results
+            data.results.forEach(function(result) {
+                $('#results').append(
+                    `<li>
+                        <img src="/coco_images_resized/${result.file_name}" alt="${result.file_name}" width="200">
+                        <p>Similarity: ${result.similarity}</p>
+                    </li>`
+                );
+            });
+        }
+    </script>
+</body>
+</html>
