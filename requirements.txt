@@ -1,4 +1,6 @@
 Flask
+torch
+pandas
+Pillow
+open-clip-torch
 scikit-learn
-nltk
-numpy
